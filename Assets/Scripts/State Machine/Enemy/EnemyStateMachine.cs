@@ -13,6 +13,7 @@ public class EnemyStateMachine : MonoBehaviour
 
     // Properties //
     [SerializeField] private float movementSpeed = 1;
+    [SerializeField] private float LookRotationDampFactor = 8.0f;
 
     // Components //
     public BoxCollider wanderZone; // A BoxCollider used to mark the area an enemy will wander when in WanderingState.
@@ -27,7 +28,7 @@ public class EnemyStateMachine : MonoBehaviour
 
 
     private void Awake()
-    {  
+    {
     }
 
     private void Start()
@@ -57,14 +58,14 @@ public class EnemyStateMachine : MonoBehaviour
     }
 
 
-// Idle
+    // Idle
     private void IdleState()
     {
 
     }
 
 
-// Wandering
+    // Wandering
     /// <summary>
     /// Player will find a random point inside randomPointBox and move towards it.
     /// On arrival they will find a new point
@@ -73,13 +74,15 @@ public class EnemyStateMachine : MonoBehaviour
     {
 
         // Find new wander point when necessary
-        if(Vector3.Distance(transform.position, currentMovementTarget) < 0.001 || currentMovementTarget == Vector3.zero)
+        if (Vector3.Distance(transform.position, currentMovementTarget) < 0.001 || currentMovementTarget == Vector3.zero)
         {
             currentMovementTarget = GetRandomPointInsideCollider(wanderZone);
             currentMovementTarget.y = transform.position.y; // Set Y position at enemy's height so they do not raise/lower. ToDo: Handle multiple levels/stairs   
         }
 
         transform.position = Vector3.MoveTowards(transform.position, currentMovementTarget, movementSpeed * Time.deltaTime);
+        FaceMoveDirection();
+
     }
 
     // ToDo: Check point is not inside another object
@@ -93,7 +96,7 @@ public class EnemyStateMachine : MonoBehaviour
             Random.Range(-extents.z, extents.z)
         );
 
-        if(DEBUG_MODE)
+        if (DEBUG_MODE)
         {
             // debugPlacementPoint will hover above the wander point 
             Vector3 debugPlacementPoint = point;
@@ -103,14 +106,14 @@ public class EnemyStateMachine : MonoBehaviour
             {
                 GameObject currentMarker = Instantiate(pointMarker, debugPlacementPoint, Quaternion.identity); // Debug - Show location
                 Destroy(currentMarker, 3);
-            }       
+            }
         }
-                     
+
         return boxCollider.transform.TransformPoint(point);
     }
 
 
-// Attacking
+    // Attacking
     private void AttackingState()
     {
 
@@ -119,6 +122,15 @@ public class EnemyStateMachine : MonoBehaviour
     private void AttackingCooldownState()
     {
 
+    }
+
+    // Rotate the enemy to face towards their currentMovementTarget
+    protected void FaceMoveDirection()
+    {
+        Vector3 targetPoint = new Vector3(currentMovementTarget.x, transform.position.y, currentMovementTarget.z) - transform.position;
+        Quaternion targetRotation = Quaternion.LookRotation(targetPoint, Vector3.up);
+
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * LookRotationDampFactor);
     }
 
 }
