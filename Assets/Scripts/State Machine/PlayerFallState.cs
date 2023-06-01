@@ -12,21 +12,20 @@ public class PlayerFallState : PlayerBaseState
         stateMachine.velocity.y = 0.0f; 
     }
 
-    public override void Exit()
+    public override void Tick()
     {
         ApplyGravity();
         Move();
         // FaceMoveDirection() ?
 
-        if(stateMachine.characterController.isGrounded)
+        if (stateMachine.characterController.isGrounded)
         {
             stateMachine.SwitchState(new PlayerMoveState(stateMachine));
         }
-
     }
 
-    public override void Tick()
+    public override void Exit()
     {
-        throw new System.NotImplementedException();
     }
+
 }
