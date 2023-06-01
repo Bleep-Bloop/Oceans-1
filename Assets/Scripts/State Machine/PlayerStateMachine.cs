@@ -30,9 +30,5 @@ public class PlayerStateMachine : StateMachine
         //SwitchState(new PlayerMoveState(this));
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+
 }
