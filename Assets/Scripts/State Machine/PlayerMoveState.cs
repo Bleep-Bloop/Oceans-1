@@ -35,7 +35,7 @@ public class PlayerMoveState : PlayerBaseState
 
     private void SwitchToJumpState()
     {
-        // stateMachine.SwitchState(new PlayerJumpState(stateMachine));
+        stateMachine.SwitchState(new PlayerJumpState(stateMachine));
     }
 
 

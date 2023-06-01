@@ -27,7 +27,7 @@ public class PlayerStateMachine : StateMachine
     {
         mainCamera = Camera.main.transform;
 
-        //SwitchState(new PlayerMoveState(this));
+        SwitchState(new PlayerMoveState(this));
     }
 
 
