@@ -17,8 +17,8 @@ public class PlayerJumpState : PlayerBaseState
     {
         ApplyGravity();
 
-        //if (stateMachine.velocity.y <= 0.0f)
-        //stateMachine.SwitchState(new PlayerFallState(stateMachine));
+        if (stateMachine.velocity.y <= 0.0f)
+            stateMachine.SwitchState(new PlayerFallState(stateMachine));
 
         FaceMoveDirection();
         Move();

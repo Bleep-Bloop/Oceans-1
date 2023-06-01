@@ -20,7 +20,7 @@ public class PlayerMoveState : PlayerBaseState
     {
         if(!stateMachine.characterController.isGrounded)
         {
-            // stateMachine.SwitchState(new PlayerFallState(stateMachine));
+            stateMachine.SwitchState(new PlayerFallState(stateMachine));
 
             CalculateMoveDirection();
             FaceMoveDirection();
