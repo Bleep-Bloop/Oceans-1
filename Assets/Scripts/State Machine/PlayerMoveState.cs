@@ -5,8 +5,6 @@ using UnityEngine;
 public class PlayerMoveState : PlayerBaseState
 {
 
-    private readonly int MoveSpeedHash = Animator.StringToHash("MoveSpeed");
-
     public PlayerMoveState(PlayerStateMachine stateMachine) : base(stateMachine) { }
 
     public override void Enter()
@@ -21,11 +19,11 @@ public class PlayerMoveState : PlayerBaseState
         if(!stateMachine.characterController.isGrounded)
         {
             stateMachine.SwitchState(new PlayerFallState(stateMachine));
-
-            CalculateMoveDirection();
-            FaceMoveDirection();
-            Move();
         }
+
+        CalculateMoveDirection();
+        FaceMoveDirection();
+        Move();
     }
 
     public override void Exit()

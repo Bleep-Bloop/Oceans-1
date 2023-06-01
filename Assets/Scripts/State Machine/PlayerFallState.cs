@@ -16,7 +16,7 @@ public class PlayerFallState : PlayerBaseState
     {
         ApplyGravity();
         Move();
-        // FaceMoveDirection() ?
+        FaceMoveDirection();
 
         if (stateMachine.characterController.isGrounded)
         {

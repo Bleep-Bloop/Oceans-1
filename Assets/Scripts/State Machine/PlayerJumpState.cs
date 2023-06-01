@@ -6,6 +6,7 @@ public class PlayerJumpState : PlayerBaseState
 {
 
     public PlayerJumpState(PlayerStateMachine stateMachine) : base(stateMachine) { }
+   
     public override void Enter()
     {
 
