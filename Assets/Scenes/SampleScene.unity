@@ -501,7 +501,7 @@ GameObject:
   - component: {fileID: 675891060}
   m_Layer: 6
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1015,8 +1015,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 01834dfdaac5b844cb139c697a2db477, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  movementSpeed: 5
+  movementSpeed: 3
   LookRotationDampFactor: 10
+  meleeReach: 0.5
   wanderZone: {fileID: 2101017672}
   currentState: 1
   currentMovementTarget: {x: 0, y: 0, z: 0}
@@ -1034,8 +1035,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0b5750f027cf144c910ca82cfe31d0b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  viewRadius: 5
-  viewAngle: 57
+  viewRadius: 12
+  viewAngle: 84
   targetMask:
     serializedVersion: 2
     m_Bits: 64
