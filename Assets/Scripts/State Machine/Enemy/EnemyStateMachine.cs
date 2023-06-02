@@ -335,6 +335,9 @@ public class EnemyStateMachine : MonoBehaviour
 
     private void Move(Vector3 movementLocation)
     {
+        // Maintain enemies altitude
+        movementLocation.y = transform.position.y;
+        
         transform.position = Vector3.MoveTowards(transform.position, movementLocation, movementSpeed * Time.deltaTime);
     }
     
@@ -345,8 +348,13 @@ public class EnemyStateMachine : MonoBehaviour
     
     public void Death()
     {
+        ChangeState(EnemyState.Dying);
+        
         transform.localScale = new Vector3(1, .5f, 1f);
-        transform.localPosition = new Vector3(0, 0.8f, 0);
+        Vector3 newLocalPosition = transform.localPosition;
+        newLocalPosition.y = .8f;
+        transform.localPosition = newLocalPosition;
+
         Destroy(gameObject, 2.0f);
     }
 
