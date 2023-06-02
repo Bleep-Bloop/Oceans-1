@@ -8,6 +8,7 @@ enum EnemyState
     Attacking,
     AttackingCooldown,
     Searching,
+    Dying,
 }
 
 [RequireComponent(typeof(FieldOfView))]
@@ -19,6 +20,7 @@ public class EnemyStateMachine : MonoBehaviour
     [SerializeField] private float LookRotationDampFactor = 8.0f;
     [SerializeField] private float meleeReach = 1f;
     [SerializeField] private float meleeRadius = 0.5f;
+    [SerializeField] public bool canDie;
 
     // Components //
     public BoxCollider wanderZone; // A BoxCollider used to mark the area an enemy will wander when in WanderingState.
@@ -94,6 +96,9 @@ public class EnemyStateMachine : MonoBehaviour
                 break;
             case EnemyState.Searching:
                 SearchingState();
+                break;
+            case EnemyState.Dying:
+                Death();
                 break;
             default:
                 IdleState();
@@ -338,7 +343,12 @@ public class EnemyStateMachine : MonoBehaviour
         currentTarget = target;
     }
     
-
+    public void Death()
+    {
+        transform.localScale = new Vector3(1, .5f, 1f);
+        transform.localPosition = new Vector3(0, 0.8f, 0);
+        Destroy(gameObject, 2.0f);
+    }
 
 
 }

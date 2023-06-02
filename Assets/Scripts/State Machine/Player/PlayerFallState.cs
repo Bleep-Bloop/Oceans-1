@@ -14,9 +14,23 @@ public class PlayerFallState : PlayerBaseState
 
     public override void Tick()
     {
+
         ApplyGravity();
         Move();
         FaceMoveDirection();
+
+        // Check if landing on enemy
+        RaycastHit hit;
+        
+        if (Physics.SphereCast(stateMachine.transform.position, 0.5f, -stateMachine.transform.up, out hit, 0.5f, stateMachine.enemyLayerMask))
+        {
+            EnemyStateMachine hitEnemy = hit.collider.gameObject.GetComponent<EnemyStateMachine>();
+            if(hitEnemy.canDie)
+            {
+                hitEnemy.Death();
+            }
+        }
+
 
         if (stateMachine.characterController.isGrounded)
         {

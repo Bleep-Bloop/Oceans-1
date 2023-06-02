@@ -231,7 +231,7 @@ GameObject:
   - component: {fileID: 59638903}
   m_Layer: 6
   m_Name: CameraLookAtPoint
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -598,6 +598,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   velocity: {x: 0, y: 0, z: 0}
+  enemyLayerMask:
+    serializedVersion: 2
+    m_Bits: 8
 --- !u!143 &675891061
 CharacterController:
   m_ObjectHideFlags: 0
@@ -920,7 +923,7 @@ GameObject:
   - component: {fileID: 1131962065}
   m_Layer: 3
   m_Name: Enemy
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1018,16 +1021,20 @@ MonoBehaviour:
   movementSpeed: 3
   LookRotationDampFactor: 10
   meleeReach: 1
+  meleeRadius: 0.5
   wanderZone: {fileID: 2101017672}
   defaultState: 1
   currentState: 1
   currentMovementTarget: {x: 0, y: 0, z: 0}
-  attackCooldownTime: 0
+  attackCooldownTime: 5
+  searchingStateTime: 5
   DEBUG_MODE: 1
   pointMarker: {fileID: 4926983259924304289, guid: 6b61f0e1e3663284090bbad2a0c665a6, type: 3}
-  PlayerLayerMask:
+  TargetLayerMask:
     serializedVersion: 2
     m_Bits: 64
+  currentTarget: {fileID: 0}
+  inAttackCooldown: 0
 --- !u!114 &1131962065
 MonoBehaviour:
   m_ObjectHideFlags: 0
