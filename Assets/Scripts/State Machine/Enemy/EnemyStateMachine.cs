@@ -189,6 +189,9 @@ public class EnemyStateMachine : MonoBehaviour
             // Check if enemy will hit target.
             if(Physics.SphereCast(transform.position, meleeRadius, transform.forward, out meleeHit, meleeReach, TargetLayerMask))
             {
+                // Damage player
+                meleeHit.collider.gameObject.GetComponent<HealthComponent>().TakeDamage(1);
+                
                 // On collision with target switch to AttackingCoolDown State.
                 ChangeState(EnemyState.AttackingCooldown);
             }

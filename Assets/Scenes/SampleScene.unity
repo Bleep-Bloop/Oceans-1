@@ -499,6 +499,7 @@ GameObject:
   - component: {fileID: 675891062}
   - component: {fileID: 675891061}
   - component: {fileID: 675891060}
+  - component: {fileID: 675891063}
   m_Layer: 6
   m_Name: Player
   m_TagString: Player
@@ -633,6 +634,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mouseDelta: {x: 0, y: 0}
   moveComposite: {x: 0, y: 0}
+--- !u!114 &675891063
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 675891055}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f7877a48173c00e41b62f16471ce22bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baseHealth: 10
+  currentHealth: 0
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -1022,13 +1037,14 @@ MonoBehaviour:
   LookRotationDampFactor: 10
   meleeReach: 1
   meleeRadius: 0.5
+  canDie: 1
   wanderZone: {fileID: 2101017672}
   defaultState: 1
   currentState: 1
   currentMovementTarget: {x: 0, y: 0, z: 0}
   attackCooldownTime: 5
   searchingStateTime: 5
-  DEBUG_MODE: 1
+  DEBUG_MODE: 0
   pointMarker: {fileID: 4926983259924304289, guid: 6b61f0e1e3663284090bbad2a0c665a6, type: 3}
   TargetLayerMask:
     serializedVersion: 2
