@@ -5,6 +5,7 @@ enum EnemyState
 {
     Idle,
     Wandering,
+    Patrolling,
     Attacking,
     AttackingCooldown,
     Searching,
@@ -25,6 +26,12 @@ public class EnemyStateMachine : MonoBehaviour
     // Components //
     public BoxCollider wanderZone; // A BoxCollider used to mark the area an enemy will wander when in WanderingState.
     private FieldOfView fieldOfView;
+    [SerializeField] private BoxCollider bc;
+
+    // Patrol parts
+    [SerializeField] private List<Transform> wayPoints;
+    [SerializeField] private int _currentWaypointIndex = 0;
+    [SerializeField] private bool isPatrollingForwards = true;
 
     // Runtime //
     [SerializeField] private EnemyState defaultState; // The state the enemy returns too when not chasing/attacking. ToDo: Better comment
@@ -35,6 +42,8 @@ public class EnemyStateMachine : MonoBehaviour
     bool coroutineRunning = false;
     [SerializeField] public RaycastHit meleeHit;
     [SerializeField] private float searchingStateTime = 5.0f;
+    [SerializeField] private bool hasCollided = false;
+    [SerializeField] private float timeBetweenCollisions = 0.5f;
 
     private IEnumerator changeStateCoroutine;
 
@@ -47,16 +56,23 @@ public class EnemyStateMachine : MonoBehaviour
 
     [SerializeField] Transform currentTarget;
 
+    Transform currentWaypoint;
+
+    [SerializeField] private float knockbackForce = 1.2f;
 
     private void Awake()
     {
         fieldOfView = GetComponent<FieldOfView>();
+        bc = GetComponent<BoxCollider>();
     }
 
     private void Start()
     {
         targetSpotted = false;
         currentState = defaultState;
+        _currentWaypointIndex = 0;
+
+
     }
 
 
@@ -88,6 +104,9 @@ public class EnemyStateMachine : MonoBehaviour
             case EnemyState.Wandering:
                 WanderingState();
                 break;
+            case EnemyState.Patrolling:
+                PatrollingState();
+                break;
             case EnemyState.Attacking:
                 AttackingState();
                 break;
@@ -107,13 +126,13 @@ public class EnemyStateMachine : MonoBehaviour
 
     }
 
-// Idle
+    // Idle
     private void IdleState()
     {
 
     }
 
-// Wandering
+    // Wandering
     /// <summary>
     /// Enemy moves towards a random point inside wanderZone.
     /// On arrival a new point is chosen.
@@ -155,7 +174,7 @@ public class EnemyStateMachine : MonoBehaviour
             Vector3 debugPlacementPoint = point;
             debugPlacementPoint.y += 3;
 
-            GameObject currentMarker = Instantiate(pointMarker, debugPlacementPoint, Quaternion.identity); 
+            GameObject currentMarker = Instantiate(pointMarker, debugPlacementPoint, Quaternion.identity);
             Destroy(currentMarker, 3);
         }
 
@@ -163,16 +182,16 @@ public class EnemyStateMachine : MonoBehaviour
 
     }
 
-// Attacking
+    // Attacking
     private void AttackingState()
     {
 
         // Ensure player is not taken out of AttackingState if spotted while in SearchingState.
-        if(coroutineRunning)
+        if (coroutineRunning)
             StopAllCoroutines();
 
         // Enemy has vision of target, if sight is lost move to last seen location.
-        if(fieldOfView.visibleTargets.Count > 0)
+        if (fieldOfView.visibleTargets.Count > 0)
         {
             targetSpotted = true;
             currentMovementTarget = fieldOfView.visibleTargets[0].position;
@@ -181,17 +200,17 @@ public class EnemyStateMachine : MonoBehaviour
         {
             targetSpotted = false;
         }
-           
+
         // Attack target 
-        if (targetSpotted && Vector2.Distance(transform.position, currentMovementTarget) < meleeReach) 
+        if (targetSpotted && Vector2.Distance(transform.position, currentMovementTarget) < meleeReach)
         {
 
             // Check if enemy will hit target.
-            if(Physics.SphereCast(transform.position, meleeRadius, transform.forward, out meleeHit, meleeReach, TargetLayerMask))
+            if (Physics.SphereCast(transform.position, meleeRadius, transform.forward, out meleeHit, meleeReach, TargetLayerMask))
             {
                 // Damage player
                 meleeHit.collider.gameObject.GetComponent<HealthComponent>().TakeDamage(1);
-                
+
                 // On collision with target switch to AttackingCoolDown State.
                 ChangeState(EnemyState.AttackingCooldown);
             }
@@ -207,24 +226,18 @@ public class EnemyStateMachine : MonoBehaviour
         // Ensure enemy is always facing target.
         Move(currentMovementTarget);
         FaceMoveDirection();
-    
+
     }
 
-    private void OnDrawGizmos()
-    {
-        // Draw the sphere used in attacking SphereCast.
-        Gizmos.color = Color.red;
-        Gizmos.DrawSphere(this.transform.position + (this.transform.forward * meleeReach), meleeRadius);
-    }
 
     [SerializeField] private bool inAttackCooldown = false;
     private void AttackingCooldownState()
     {
 
-        if(inAttackCooldown == false)
+        if (inAttackCooldown == false)
         {
             currentMovementTarget = FindSpotInCircle(transform, fieldOfView.viewRadius / 1.1f);
-            
+
             inAttackCooldown = true;
         }
 
@@ -237,6 +250,7 @@ public class EnemyStateMachine : MonoBehaviour
 
     }
 
+    // Searching
     private void SearchingState()
     {
 
@@ -274,8 +288,6 @@ public class EnemyStateMachine : MonoBehaviour
         }*/
         #endregion
 
-
-
     }
 
     // Find a random point in circle around transform
@@ -296,9 +308,117 @@ public class EnemyStateMachine : MonoBehaviour
         }
 
         return randomCirclePoint;
-   
+
     }
-    
+
+    // Patrolling
+    private void PatrollingState()
+    {
+        currentWaypoint = wayPoints[_currentWaypointIndex];
+
+        if (Vector3.Distance(transform.position, currentWaypoint.position) < 0.01f)
+        {
+
+            if (isPatrollingForwards)
+            {
+                _currentWaypointIndex = (_currentWaypointIndex + 1) % wayPoints.Count;
+            }
+            else
+            {
+                if (_currentWaypointIndex == 0)
+                {
+                    _currentWaypointIndex = wayPoints.Count-1;
+                }
+                else
+                {
+                    _currentWaypointIndex--;
+                }
+            }
+
+        }
+
+        // Move towards currentWaypoint
+        transform.position = Vector3.MoveTowards(transform.position, currentWaypoint.position, movementSpeed * Time.deltaTime);
+
+        FaceTargetDirection(currentWaypoint.position);
+        KnockBackCollision();
+    }
+
+    private void ReversePatrolDirection()
+    {
+        Debug.Log("Reverse Patrol Direction");
+        isPatrollingForwards = !isPatrollingForwards;
+        if(isPatrollingForwards)
+            _currentWaypointIndex = (_currentWaypointIndex + 1) % wayPoints.Count;
+        else
+        {
+            if(_currentWaypointIndex > 0)
+                currentWaypoint = wayPoints[_currentWaypointIndex--];
+            else
+                currentWaypoint = wayPoints[2];
+            
+            
+        }
+    }
+
+   
+
+    private void KnockBackCollision()
+    {
+        RaycastHit collisionHit;
+
+        if(hasCollided == false)
+        {
+            // p1 & p2 sphere on bottom and sphere on top
+            if (Physics.BoxCast(transform.position, bc.size / 2, Vector3.forward, out collisionHit, transform.rotation, 0.5f) ||
+                Physics.BoxCast(transform.position, bc.size / 2, Vector3.right, out collisionHit, transform.rotation, 0.5f) ||
+                Physics.BoxCast(transform.position, bc.size / 2, -Vector3.forward, out collisionHit, transform.rotation, 0.5f) ||
+                Physics.BoxCast(transform.position, bc.size / 2, -Vector3.right, out collisionHit, transform.rotation, 0.5f) ||
+                Physics.BoxCast(transform.position, bc.size / 2, Vector3.up, out collisionHit, transform.rotation, 0.5f))
+            {
+                
+                ReversePatrolDirection();
+                if (collisionHit.collider.gameObject.GetComponent<PlayerStateMachine>())
+                {
+                    PlayerStateMachine collidedPlayerStateMachine = collisionHit.collider.gameObject.GetComponent<PlayerStateMachine>();
+
+                    Vector3 knockbackVelocity = -collidedPlayerStateMachine.velocity;
+                    knockbackVelocity.y += 15; // knockback kickup variable
+                    knockbackVelocity.x *= 3;
+                    knockbackVelocity.z *= 3;
+
+                    collidedPlayerStateMachine.velocity += (knockbackVelocity * knockbackForce);
+
+                    //collidedPlayerStateMachine.velocity = knockbackVelocity * knockbackForce; // -collidedPlayerStateMachine.velocity * knockbackForce;
+                    collisionHit.collider.gameObject.GetComponent<HealthComponent>().TakeDamage(1);
+                    hasCollided = true;
+
+                }
+
+                // To prevent one object from triggering multiple times // ToDo: Save previous collision and then reset in ResetCollisionCheck
+                Invoke("ResetCollisionCheck", timeBetweenCollisions);
+            }
+        }
+
+    }
+
+    private void ResetCollisionCheck()
+    {
+        hasCollided = false;
+    }
+
+    private void OnDrawGizmos()
+    {
+        // Draw the sphere used in attacking SphereCast.
+        Gizmos.color = Color.red;
+        Gizmos.DrawSphere(this.transform.position + (this.transform.forward * meleeReach), meleeRadius);
+        Gizmos.color = Color.green;
+        if(bc)
+        {
+            Gizmos.DrawCube(this.transform.position, bc.size / 2);
+        }
+
+    }
 
     // Rotate the enemy to face towards their currentMovementTarget
     protected void FaceMoveDirection()
