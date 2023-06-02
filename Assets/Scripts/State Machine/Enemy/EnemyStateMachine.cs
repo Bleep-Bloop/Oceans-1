@@ -17,7 +17,8 @@ public class EnemyStateMachine : MonoBehaviour
     // Properties //
     [SerializeField] private float movementSpeed = 1;
     [SerializeField] private float LookRotationDampFactor = 8.0f;
-    [SerializeField] private float meleeReach = 0.5f;
+    [SerializeField] private float meleeReach = 1f;
+    [SerializeField] private float meleeRadius = 0.5f;
 
     // Components //
     public BoxCollider wanderZone; // A BoxCollider used to mark the area an enemy will wander when in WanderingState.
@@ -27,9 +28,11 @@ public class EnemyStateMachine : MonoBehaviour
     [SerializeField] private EnemyState defaultState; // The state the enemy returns too when not chasing/attacking. ToDo: Better comment
     [SerializeField] private EnemyState currentState;
     [SerializeField] private Vector3 currentMovementTarget;
-    [SerializeField] private float attackCooldownTime; // Time spent in AttackCooldownState.
-    private bool enemySpotted;
+    [SerializeField] private float attackCooldownTime = 5.0f; // Time spent in AttackCooldownState.
+    private bool targetSpotted;
     bool coroutineRunning = false;
+    [SerializeField] public RaycastHit meleeHit;
+    [SerializeField] private float searchingStateTime = 5.0f;
 
     private IEnumerator changeStateCoroutine;
 
@@ -38,15 +41,10 @@ public class EnemyStateMachine : MonoBehaviour
     [SerializeField] private GameObject pointMarker; // PointMarker prefab used to visual transforms.
 
 
-    [SerializeField] private LayerMask PlayerLayerMask;
+    [SerializeField] private LayerMask TargetLayerMask;
 
-    private IEnumerator ChangeStateAfterTime(EnemyState newState, float waitTime)
-    {
-        coroutineRunning = true;
-        yield return new WaitForSeconds(waitTime);
-        ChangeState(defaultState);
-        StopCoroutine(changeStateCoroutine);
-    }
+    [SerializeField] Transform currentTarget;
+
 
     private void Awake()
     {
@@ -55,12 +53,31 @@ public class EnemyStateMachine : MonoBehaviour
 
     private void Start()
     {
-        enemySpotted = false;
+        targetSpotted = false;
         currentState = defaultState;
+    }
+
+
+    /// <summary>
+    /// Changes currentState to newState
+    /// </summary>
+    private void ChangeState(EnemyState newState)
+    {
+        currentState = newState;
+    }
+
+    private IEnumerator ChangeStateAfterTime(EnemyState newState, float waitTime)
+    {
+        coroutineRunning = true;
+        yield return new WaitForSeconds(waitTime);
+        ChangeState(newState);
+        inAttackCooldown = false;
+        StopCoroutine(changeStateCoroutine);
     }
 
     private void Update()
     {
+
         switch (currentState)
         {
             case EnemyState.Idle:
@@ -83,37 +100,18 @@ public class EnemyStateMachine : MonoBehaviour
                 break;
         }
 
-        // Player is always searching for enemies so this is in Update()
-
-        // Move to last sighted spot of enemy
-       if (fieldOfView.visibleTargets.Count > 0)
-        {
-            ChangeState(EnemyState.Attacking);
-            //currentMovementTarget = fieldOfView.visibleTargets[0].position; // moved to attacking
-        }
-        else
-        {
-            enemySpotted = false;
-        }
-
-        // Move enemy towards currentMovementTarget
-        transform.position = Vector3.MoveTowards(transform.position, currentMovementTarget, movementSpeed * Time.deltaTime);
-        //FaceMoveDirection(); // ToDo: A check on this to stop the warning might be ok
-
     }
 
-
-    // Idle
+// Idle
     private void IdleState()
     {
 
     }
 
-
-    // Wandering
+// Wandering
     /// <summary>
-    /// Player will find a random point inside randomPointBox and move towards it.
-    /// On arrival they will find a new point
+    /// Enemy moves towards a random point inside wanderZone.
+    /// On arrival a new point is chosen.
     /// </summary>
     private void WanderingState()
     {
@@ -125,8 +123,12 @@ public class EnemyStateMachine : MonoBehaviour
             currentMovementTarget.y = transform.position.y; // Set Y position at enemy's height so they do not raise/lower. ToDo: Handle multiple levels/stairs   
         }
 
-        transform.position = Vector3.MoveTowards(transform.position, currentMovementTarget, movementSpeed * Time.deltaTime);
+        // Move player towards wander point
+        Move(currentMovementTarget);
         FaceMoveDirection();
+
+        // Check for target
+        CheckVision(fieldOfView);
 
     }
 
@@ -137,90 +139,103 @@ public class EnemyStateMachine : MonoBehaviour
         Vector3 extents = boxCollider.size / 2f;
         Vector3 point = new Vector3(
             Random.Range(-extents.x, extents.x),
-            Random.Range(-extents.y, extents.y), // we can probably set this to the height here maybe check back later ToDo:
+            Random.Range(-extents.y, extents.y),
             Random.Range(-extents.z, extents.z)
         );
 
+        // Debug - Show location
         if (DEBUG_MODE)
         {
             // debugPlacementPoint will hover above the wander point 
             Vector3 debugPlacementPoint = point;
             debugPlacementPoint.y += 3;
 
-            GameObject currentMarker = Instantiate(pointMarker, debugPlacementPoint, Quaternion.identity); // Debug - Show location
+            GameObject currentMarker = Instantiate(pointMarker, debugPlacementPoint, Quaternion.identity); 
             Destroy(currentMarker, 3);
-
         }
 
         return boxCollider.transform.TransformPoint(point);
+
     }
 
-
-    // Attacking
+// Attacking
     private void AttackingState()
     {
 
-        // Ensure player is not taken out of AttackingState if spotted while in SearchingState
+        // Ensure player is not taken out of AttackingState if spotted while in SearchingState.
         if(coroutineRunning)
-        {
             StopAllCoroutines();
-        }
-        
 
-        // Enemy has vision of player Chase target. if sight is lost move to last seen location
+        // Enemy has vision of target, if sight is lost move to last seen location.
         if(fieldOfView.visibleTargets.Count > 0)
         {
-            enemySpotted = true;
+            targetSpotted = true;
             currentMovementTarget = fieldOfView.visibleTargets[0].position;
         }
         else
         {
-            enemySpotted = false;
+            targetSpotted = false;
         }
            
-
-        if (enemySpotted && Vector2.Distance(transform.position, currentMovementTarget) < 0.01)
+        // Attack target 
+        if (targetSpotted && Vector2.Distance(transform.position, currentMovementTarget) < meleeReach) 
         {
 
-            Debug.Log("ATTACK PLAYER");
-
-            RaycastHit hit;
-
-            Vector3 p1 = transform.position;
-           // float distanceToObstacle = 0;
-
-            // melee range radius
-            if(Physics.SphereCast(p1, 5, transform.forward, out hit, meleeReach, PlayerLayerMask))
+            // Check if enemy will hit target.
+            if(Physics.SphereCast(transform.position, meleeRadius, transform.forward, out meleeHit, meleeReach, TargetLayerMask))
             {
-             //   distanceToObstacle = hit.distance;
-                Debug.Log("Player Hit");
+                // On collision with target switch to AttackingCoolDown State.
+                ChangeState(EnemyState.AttackingCooldown);
             }
 
-
-          
-            
-            ChangeState(EnemyState.AttackingCooldown);
         }
-        else if (!enemySpotted && Vector2.Distance(transform.position, currentMovementTarget) < 0.01)
+        // If the enemy has arrived to last seen location and they cannot see target, move to searching state.
+        else if (!targetSpotted && Vector2.Distance(transform.position, currentMovementTarget) < 0.01)
         {
             ChangeState(EnemyState.Searching);
         }
 
+        //transform.position = Vector3.MoveTowards(transform.position, currentMovementTarget, movementSpeed * Time.deltaTime);
+        // Ensure enemy is always facing target.
+        Move(currentMovementTarget);
         FaceMoveDirection();
     
     }
 
+    private void OnDrawGizmos()
+    {
+        // Draw the sphere used in attacking SphereCast.
+        Gizmos.color = Color.red;
+        Gizmos.DrawSphere(this.transform.position + (this.transform.forward * meleeReach), meleeRadius);
+    }
+
+    [SerializeField] private bool inAttackCooldown = false;
     private void AttackingCooldownState()
     {
+
+        if(inAttackCooldown == false)
+        {
+            currentMovementTarget = FindSpotInCircle(transform, fieldOfView.viewRadius / 1.1f);
+            
+            inAttackCooldown = true;
+        }
+
+        Move(currentMovementTarget);
+        FaceTargetDirection(currentTarget.position);
+
+        changeStateCoroutine = ChangeStateAfterTime(defaultState, attackCooldownTime);
+        StartCoroutine(changeStateCoroutine);
+
 
     }
 
     private void SearchingState()
     {
 
-        changeStateCoroutine = ChangeStateAfterTime(EnemyState.Idle, 5.0f);
+        changeStateCoroutine = ChangeStateAfterTime(defaultState, searchingStateTime);
         StartCoroutine(changeStateCoroutine);
 
+        // Spin
 
         // WIP - Trying to get enemy to randomly spin around checking area 
         #region Attempt At Random Spinning Checks
@@ -255,51 +270,74 @@ public class EnemyStateMachine : MonoBehaviour
 
     }
 
-    // Used in attempt to have enemy rotate and find player while searching
-    /*
-    // Find a random spot in the circle around a locatoin
-    private Vector3 FindSpotInCircleAroundLocation(Transform transform, float circleRadius)
+    // Find a random point in circle around transform
+    private Vector3 FindSpotInCircle(Transform transform, float circleRadius)
     {
-        Vector2 randomPointInCircle = transform.position + Random.insideUnitSphere * circleRadius * 0.5f; // 0.5 half the radius
-        Vector3 newLookAtPoint = new Vector3();
+        Vector2 randomPointInCircle = transform.position + Random.insideUnitSphere * circleRadius * 0.5f; // 0.5 - Half the radius
+        Vector3 randomCirclePoint = new Vector3();
 
-        newLookAtPoint.x = randomPointInCircle.x;
-        newLookAtPoint.y = base.transform.position.y;
-        newLookAtPoint.z = randomPointInCircle.y;
+        randomCirclePoint.x = randomPointInCircle.x;
+        randomCirclePoint.y = base.transform.position.y;
+        randomCirclePoint.z = randomPointInCircle.y;
 
-
+        // Debug - Show location
         if (DEBUG_MODE)
         {
-            // Debug - Show location
-            GameObject currentMarker = Instantiate(pointMarker, newLookAtPoint, Quaternion.identity);
+            GameObject currentMarker = Instantiate(pointMarker, randomCirclePoint, Quaternion.identity);
             Destroy(currentMarker, 1);
         }
 
-        return newLookAtPoint;
+        return randomCirclePoint;
+   
     }
-    */
+    
 
     // Rotate the enemy to face towards their currentMovementTarget
     protected void FaceMoveDirection()
     {
         Vector3 targetPoint = new Vector3(currentMovementTarget.x, transform.position.y, currentMovementTarget.z) - transform.position;
-        Quaternion targetRotation = Quaternion.LookRotation(targetPoint, Vector3.up); // ToDo: This is throwing a warning because it equals zero sometimes
+        Quaternion targetRotation = Quaternion.LookRotation(targetPoint, Vector3.up); // ToDo: Check thrown warning
 
         transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * LookRotationDampFactor);
     }
 
-    private void ChangeState(EnemyState newState)
+    // Rotate the enemy to face towards targetPosition
+    protected void FaceTargetDirection(Vector3 targetPosition)
     {
-        currentState = newState;
+        Vector3 targetPoint = new Vector3(targetPosition.x, transform.position.y, targetPosition.z) - transform.position;
+        Quaternion targetRotation = Quaternion.LookRotation(targetPoint, Vector3.up); // ToDo: Check thrown warning
+
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * LookRotationDampFactor);
     }
 
-    private void OnCollisionEnter(Collision collision)
+
+    /// <summary>
+    /// Checks the field of view for visibile targets and triggers Attacking state if true.
+    /// </summary>
+    private void CheckVision(FieldOfView vision)
     {
-        if(collision.gameObject.tag == "Player")
+        if (vision.visibleTargets.Count > 0)
         {
-            Debug.Log("Player Hit - Move to Attack Cooldown State");
+            SetCurrentTarget(vision.visibleTargets[0]);
+            ChangeState(EnemyState.Attacking);
+        }
+        else
+        {
+            targetSpotted = false;
+            SetCurrentTarget(null);
         }
     }
+
+    private void Move(Vector3 movementLocation)
+    {
+        transform.position = Vector3.MoveTowards(transform.position, movementLocation, movementSpeed * Time.deltaTime);
+    }
+    
+    private void SetCurrentTarget(Transform target)
+    {
+        currentTarget = target;
+    }
+    
 
 
 
