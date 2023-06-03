@@ -1,12 +1,10 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerJumpState : PlayerBaseState
 {
 
     public PlayerJumpState(PlayerStateMachine stateMachine) : base(stateMachine) { }
-   
+
     public override void Enter()
     {
 
@@ -21,8 +19,9 @@ public class PlayerJumpState : PlayerBaseState
         if (stateMachine.velocity.y <= 0.0f)
             stateMachine.SwitchState(new PlayerFallState(stateMachine));
 
-        FaceMoveDirection();
         Move();
+        FaceMoveDirection();
+
 
     }
 
@@ -30,6 +29,6 @@ public class PlayerJumpState : PlayerBaseState
     {
     }
 
-   
+
 
 }

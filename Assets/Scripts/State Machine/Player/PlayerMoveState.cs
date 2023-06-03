@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class PlayerMoveState : PlayerBaseState
@@ -16,7 +14,7 @@ public class PlayerMoveState : PlayerBaseState
 
     public override void Tick()
     {
-        if(!stateMachine.characterController.isGrounded)
+        if (!stateMachine.characterController.isGrounded)
         {
             stateMachine.SwitchState(new PlayerFallState(stateMachine));
         }
