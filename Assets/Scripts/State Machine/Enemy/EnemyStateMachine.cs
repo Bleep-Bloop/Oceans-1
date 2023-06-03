@@ -10,6 +10,7 @@ enum EnemyState
     AttackingCooldown,
     Searching,
     Observing,
+    Alerting,
     Dying,
 }
 
@@ -24,7 +25,7 @@ public class EnemyStateMachine : MonoBehaviour
     [SerializeField] private float meleeRadius = 0.5f;
     [SerializeField] private float observerTurnSpeed = 0.5f;
     [SerializeField] public bool canDie;
-
+    [SerializeField] private float spottedCooldownTime = 5; // ToDo: Iffy Name
 
     // Components //
     public BoxCollider wanderZone; // A BoxCollider used to mark the area an enemy will wander when in WanderingState.
@@ -129,6 +130,9 @@ public class EnemyStateMachine : MonoBehaviour
                 break;
             case EnemyState.Observing:
                 ObservingState();
+                break;
+            case EnemyState.Alerting:
+                AltertingState();
                 break;
             default:
                 IdleState();
@@ -474,6 +478,41 @@ public class EnemyStateMachine : MonoBehaviour
             }
         }
 
+        CheckVision(fieldOfView);
+        if(currentTarget) // ToDo: Rename currentTarget to inview or something I think it works better
+        {
+            ChangeState(EnemyState.Alerting);
+        }
+
+    }
+
+    protected void AltertingState()
+    {
+
+        // rotate towards but stop if they camera is going to go past a certain point (unsure exactly how to go about that.
+        if (currentTarget)
+        {
+
+            Transform sightedTarget = currentTarget.transform;
+            Vector3 targetDirection = sightedTarget.position - transform.position;
+
+            float singleStep = observerTurnSpeed * Time.deltaTime;
+            Vector3 newDirection = Vector3.RotateTowards(transform.forward, targetDirection, singleStep, 0.0f);
+            transform.rotation = Quaternion.LookRotation(newDirection);
+        
+            // Report last seen position to connected enemies
+        
+        }
+        else
+        {
+            changeStateCoroutine = ChangeStateAfterTime(defaultState, spottedCooldownTime);
+            StartCoroutine(changeStateCoroutine);
+        }
+
+        // Need to ensure when leaving sight current target is cleared.
+        CheckVision(fieldOfView);
+
+        // set currentTarget to all enemies. (Connect enemies in inspector?
     }
 
     /// <summary>
@@ -484,7 +523,7 @@ public class EnemyStateMachine : MonoBehaviour
         if (vision.visibleTargets.Count > 0)
         {
             SetCurrentTarget(vision.visibleTargets[0]);
-            ChangeState(EnemyState.Attacking);
+            //ChangeState(EnemyState.Attacking); // Remove changing state here and set it in the given states
         }
         else
         {
