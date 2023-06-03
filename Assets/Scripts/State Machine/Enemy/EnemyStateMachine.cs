@@ -9,6 +9,7 @@ enum EnemyState
     Attacking,
     AttackingCooldown,
     Searching,
+    Observing,
     Dying,
 }
 
@@ -21,7 +22,9 @@ public class EnemyStateMachine : MonoBehaviour
     [SerializeField] private float LookRotationDampFactor = 8.0f;
     [SerializeField] private float meleeReach = 1f;
     [SerializeField] private float meleeRadius = 0.5f;
+    [SerializeField] private float observerTurnSpeed = 0.5f;
     [SerializeField] public bool canDie;
+
 
     // Components //
     public BoxCollider wanderZone; // A BoxCollider used to mark the area an enemy will wander when in WanderingState.
@@ -31,6 +34,7 @@ public class EnemyStateMachine : MonoBehaviour
     // Patrol parts
     [SerializeField] private List<Transform> wayPoints;
     [SerializeField] private int _currentWaypointIndex = 0;
+    [SerializeField] private int _currentLookTowardsIndex = 0;
     [SerializeField] private bool isPatrollingForwards = true;
 
     // Runtime //
@@ -44,6 +48,8 @@ public class EnemyStateMachine : MonoBehaviour
     [SerializeField] private float searchingStateTime = 5.0f;
     [SerializeField] private bool hasCollided = false;
     [SerializeField] private float timeBetweenCollisions = 0.5f;
+    [SerializeField] private float observingDegrees = 90;
+
 
     private IEnumerator changeStateCoroutine;
 
@@ -60,6 +66,8 @@ public class EnemyStateMachine : MonoBehaviour
 
     [SerializeField] private float knockbackForce = 1.2f;
 
+
+
     private void Awake()
     {
         fieldOfView = GetComponent<FieldOfView>();
@@ -71,7 +79,7 @@ public class EnemyStateMachine : MonoBehaviour
         targetSpotted = false;
         currentState = defaultState;
         _currentWaypointIndex = 0;
-
+        _currentLookTowardsIndex = 0;
 
     }
 
@@ -118,6 +126,9 @@ public class EnemyStateMachine : MonoBehaviour
                 break;
             case EnemyState.Dying:
                 Death();
+                break;
+            case EnemyState.Observing:
+                ObservingState();
                 break;
             default:
                 IdleState();
@@ -380,21 +391,22 @@ public class EnemyStateMachine : MonoBehaviour
                 ReversePatrolDirection();
                 if (collisionHit.collider.gameObject.GetComponent<PlayerStateMachine>())
                 {
+                    Debug.Log("Knock Back");
                     PlayerStateMachine collidedPlayerStateMachine = collisionHit.collider.gameObject.GetComponent<PlayerStateMachine>();
 
                     Vector3 knockbackVelocity = -collidedPlayerStateMachine.velocity;
                     knockbackVelocity.y += 15; // knockback kickup variable
-                    knockbackVelocity.x *= 3;
-                    knockbackVelocity.z *= 3;
+                    knockbackVelocity.x = -25; 
+                    knockbackVelocity.z = -25;
 
-                    collidedPlayerStateMachine.velocity += (knockbackVelocity * knockbackForce);
+                    collidedPlayerStateMachine.velocity = (knockbackVelocity * knockbackForce);
 
                     //collidedPlayerStateMachine.velocity = knockbackVelocity * knockbackForce; // -collidedPlayerStateMachine.velocity * knockbackForce;
                     collisionHit.collider.gameObject.GetComponent<HealthComponent>().TakeDamage(1);
                     hasCollided = true;
 
                 }
-
+                
                 // To prevent one object from triggering multiple times // ToDo: Save previous collision and then reset in ResetCollisionCheck
                 Invoke("ResetCollisionCheck", timeBetweenCollisions);
             }
@@ -438,6 +450,31 @@ public class EnemyStateMachine : MonoBehaviour
         transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * LookRotationDampFactor);
     }
 
+    /// <summary>
+    /// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// </summary>
+    // Observing State 
+    protected void ObservingState()
+    {
+
+        Transform currentLookTowardsPoint = wayPoints[_currentWaypointIndex];
+
+        if(wayPoints.Count >= 0)
+        {
+            Vector3 targetDirection = currentLookTowardsPoint.position - transform.position;
+
+            float singleStep = observerTurnSpeed * Time.deltaTime;
+            Vector3 newDirection = Vector3.RotateTowards(transform.forward, targetDirection, singleStep, 0.0f);
+            transform.rotation = Quaternion.LookRotation(newDirection);
+
+            // If facing
+            if (Vector3.Angle(transform.forward, targetDirection) < 1)
+            {
+                _currentWaypointIndex = (_currentWaypointIndex + 1) % wayPoints.Count;
+            }
+        }
+
+    }
 
     /// <summary>
     /// Checks the field of view for visibile targets and triggers Attacking state if true.
