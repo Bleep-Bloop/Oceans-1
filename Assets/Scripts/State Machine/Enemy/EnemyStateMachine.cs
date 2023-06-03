@@ -51,6 +51,8 @@ public class EnemyStateMachine : MonoBehaviour
     [SerializeField] private float timeBetweenCollisions = 0.5f;
     [SerializeField] private float observingDegrees = 90;
 
+    // Observer work
+    [SerializeField] private List<Transform> connectedEnemies;
 
     private IEnumerator changeStateCoroutine;
 
@@ -147,6 +149,17 @@ public class EnemyStateMachine : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// Get the x and y value of a Vector3 as a Vector2
+    /// </summary>
+    /// <param name="vector3"></param>
+    /// <returns>Vector2 holding incoming vector3's x and z values</returns>
+    private Vector2 GetVector3XZ(Vector3 vector3)
+    {
+        Vector2 transformXZ = new Vector2(vector3.x, vector3.z);
+        return transformXZ;
+    }
+
     // Wandering
     /// <summary>
     /// Enemy moves towards a random point inside wanderZone.
@@ -155,8 +168,17 @@ public class EnemyStateMachine : MonoBehaviour
     private void WanderingState()
     {
 
+        // ToDo: Ignore Y when checking distance
+        Vector2 currentXZ = GetVector3XZ(transform.position);
+        Vector2 currentTargetXZ = GetVector3XZ(currentMovementTarget);
+
+        // If lost sight of target and arrived at last seen position
+        if (!currentTarget && Vector2.Distance(currentXZ, currentTargetXZ) < 0.1)
+            ChangeState(EnemyState.Searching);
+
+
         // Find new wander point when necessary
-        if (Vector3.Distance(transform.position, currentMovementTarget) < 0.001 || currentMovementTarget == Vector3.zero)
+        if (Vector2.Distance(currentXZ, currentTargetXZ) < 0.001 || currentMovementTarget == Vector3.zero)
         {
             currentMovementTarget = GetRandomPointInsideCollider(wanderZone);
             currentMovementTarget.y = transform.position.y; // Set Y position at enemy's height so they do not raise/lower. ToDo: Handle multiple levels/stairs   
@@ -168,6 +190,11 @@ public class EnemyStateMachine : MonoBehaviour
 
         // Check for target
         CheckVision(fieldOfView);
+
+        if(currentTarget)
+        {
+            ChangeState(EnemyState.Attacking);
+        }
 
     }
 
@@ -205,40 +232,38 @@ public class EnemyStateMachine : MonoBehaviour
         if (coroutineRunning)
             StopAllCoroutines();
 
-        // Enemy has vision of target, if sight is lost move to last seen location.
-        if (fieldOfView.visibleTargets.Count > 0)
+        // Set movement to currentTargets position
+        if (currentTarget)
         {
-            targetSpotted = true;
-            currentMovementTarget = fieldOfView.visibleTargets[0].position;
-        }
-        else
-        {
-            targetSpotted = false;
+            currentMovementTarget = currentTarget.transform.position;
         }
 
-        // Attack target 
-        if (targetSpotted && Vector2.Distance(transform.position, currentMovementTarget) < meleeReach)
+        // If still pursuing target and in melee reach; check for hit.
+        if (currentTarget && Vector2.Distance(transform.position, currentMovementTarget) < meleeReach)
         {
-
-            // Check if enemy will hit target.
+            // If player's layer mask is hit
             if (Physics.SphereCast(transform.position, meleeRadius, transform.forward, out meleeHit, meleeReach, TargetLayerMask))
-            {
+            { 
                 // Damage player
-                meleeHit.collider.gameObject.GetComponent<HealthComponent>().TakeDamage(1);
+                meleeHit.collider.gameObject.GetComponent<HealthComponent>().TakeDamage(1); 
 
-                // On collision with target switch to AttackingCoolDown State.
+                // On damage switch to AttackingCoolDown State.
                 ChangeState(EnemyState.AttackingCooldown);
             }
 
         }
-        // If the enemy has arrived to last seen location and they cannot see target, move to searching state.
-        else if (!targetSpotted && Vector2.Distance(transform.position, currentMovementTarget) < 0.01)
-        {
-            ChangeState(EnemyState.Searching);
-        }
 
-        //transform.position = Vector3.MoveTowards(transform.position, currentMovementTarget, movementSpeed * Time.deltaTime);
-        // Ensure enemy is always facing target.
+        // ToDo: Ignore Y when checking distance
+        Vector2 currentXZ = new Vector2(transform.position.x, transform.position.z);
+        Vector2 currentTargetXZ = new Vector2(currentMovementTarget.x, currentMovementTarget.z);
+
+        // If lost sight of target and arrived at last seen position
+        if (!currentTarget && Vector2.Distance(currentXZ, currentTargetXZ) < 0.1)
+            ChangeState(EnemyState.Searching);
+
+        // Ensure currentTarget will nullify when lost sight
+        CheckVision(fieldOfView);
+
         Move(currentMovementTarget);
         FaceMoveDirection();
 
@@ -326,12 +351,17 @@ public class EnemyStateMachine : MonoBehaviour
 
     }
 
+
     // Patrolling
     private void PatrollingState()
     {
         currentWaypoint = wayPoints[_currentWaypointIndex];
 
-        if (Vector3.Distance(transform.position, currentWaypoint.position) < 0.01f)
+        // ToDo: Ignore Y when checking distance
+        Vector2 currentXZ = GetVector3XZ(transform.position);
+        Vector2 currentTargetXZ = GetVector3XZ(currentWaypoint.position);
+
+        if (Vector2.Distance(currentXZ, currentTarget.position) < 0.01f)
         {
 
             if (isPatrollingForwards)
@@ -356,7 +386,7 @@ public class EnemyStateMachine : MonoBehaviour
         transform.position = Vector3.MoveTowards(transform.position, currentWaypoint.position, movementSpeed * Time.deltaTime);
 
         FaceTargetDirection(currentWaypoint.position);
-        KnockBackCollision();
+        KnockBackCollision(); 
     }
 
     private void ReversePatrolDirection()
@@ -528,7 +558,7 @@ public class EnemyStateMachine : MonoBehaviour
         else
         {
             targetSpotted = false;
-            SetCurrentTarget(null);
+            SetCurrentTarget(null); // I dont think this is needed we want to save last seen location
         }
     }
 

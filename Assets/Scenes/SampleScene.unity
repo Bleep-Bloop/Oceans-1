@@ -337,12 +337,12 @@ GameObject:
   - component: {fileID: 484589524}
   - component: {fileID: 484589523}
   m_Layer: 3
-  m_Name: Enemy (1)
+  m_Name: Observer Guy
   m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &484589523
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -380,11 +380,14 @@ MonoBehaviour:
   LookRotationDampFactor: 10
   meleeReach: 1
   meleeRadius: 0.5
+  observerTurnSpeed: 0.5
   canDie: 0
+  spottedCooldownTime: 5
   wanderZone: {fileID: 2101017672}
   bc: {fileID: 484589525}
   wayPoints:
   - {fileID: 1686432415}
+  - {fileID: 1894073003}
   _currentWaypointIndex: 0
   _currentLookTowardsIndex: 0
   isPatrollingForwards: 1
@@ -396,6 +399,7 @@ MonoBehaviour:
   hasCollided: 0
   timeBetweenCollisions: 0.5
   observingDegrees: 90
+  connectedEnemies: []
   DEBUG_MODE: 0
   pointMarker: {fileID: 4926983259924304289, guid: 6b61f0e1e3663284090bbad2a0c665a6, type: 3}
   TargetLayerMask:
@@ -1205,7 +1209,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1131962059}
   m_LocalRotation: {x: 0, y: -0.917661, z: 0, w: 0.39736408}
-  m_LocalPosition: {x: 6, y: 5.02, z: 15.69}
+  m_LocalPosition: {x: 6, y: 1.46, z: 15.69}
   m_LocalScale: {x: 1, y: 1.5, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1224,11 +1228,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 01834dfdaac5b844cb139c697a2db477, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  movementSpeed: 3
+  movementSpeed: 1.7
   LookRotationDampFactor: 10
   meleeReach: 1
   meleeRadius: 0.5
+  observerTurnSpeed: 1
   canDie: 0
+  spottedCooldownTime: 5
   wanderZone: {fileID: 2101017672}
   bc: {fileID: 1131962060}
   wayPoints:
@@ -1239,7 +1245,7 @@ MonoBehaviour:
   _currentWaypointIndex: 0
   _currentLookTowardsIndex: 0
   isPatrollingForwards: 1
-  defaultState: 0
+  defaultState: 1
   currentState: 0
   currentMovementTarget: {x: 0, y: 0, z: 0}
   attackCooldownTime: 5
@@ -1247,6 +1253,7 @@ MonoBehaviour:
   hasCollided: 0
   timeBetweenCollisions: 0.5
   observingDegrees: 90
+  connectedEnemies: []
   DEBUG_MODE: 0
   pointMarker: {fileID: 4926983259924304289, guid: 6b61f0e1e3663284090bbad2a0c665a6, type: 3}
   TargetLayerMask:
@@ -2049,6 +2056,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac0b09e7857660247b1477e93731de29, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &1894073002
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1894073003}
+  m_Layer: 0
+  m_Name: CameraWaypoint 2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1894073003
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1894073002}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.91, y: 5.02, z: 2.12}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 13
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2031389634
 GameObject:
   m_ObjectHideFlags: 0
