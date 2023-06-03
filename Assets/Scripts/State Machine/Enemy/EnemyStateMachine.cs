@@ -52,7 +52,7 @@ public class EnemyStateMachine : MonoBehaviour
     [SerializeField] private float observingDegrees = 90;
 
     // Observer work
-    [SerializeField] private List<Transform> connectedEnemies;
+    [SerializeField] private List<EnemyStateMachine> connectedEnemies;
 
     private IEnumerator changeStateCoroutine;
 
@@ -134,7 +134,7 @@ public class EnemyStateMachine : MonoBehaviour
                 ObservingState();
                 break;
             case EnemyState.Alerting:
-                AltertingState();
+                AlertingState();
                 break;
             default:
                 IdleState();
@@ -147,6 +147,13 @@ public class EnemyStateMachine : MonoBehaviour
     private void IdleState()
     {
 
+        if (currentTarget)
+        {
+            ChangeState(EnemyState.Attacking);
+        }
+        
+        CheckVision(fieldOfView);
+        
     }
 
     /// <summary>
@@ -226,6 +233,8 @@ public class EnemyStateMachine : MonoBehaviour
     // Attacking
     private void AttackingState()
     {
+
+        Debug.Log("ENTERED ATTACK ATLEAST ONCE");
 
         // Ensure player is not taken out of AttackingState if spotted while in SearchingState.
         if (coroutineRunning)
@@ -528,10 +537,10 @@ public class EnemyStateMachine : MonoBehaviour
 
     }
 
-    protected void AltertingState()
+    protected void AlertingState()
     {
 
-        // rotate towards but stop if they camera is going to go past a certain point (unsure exactly how to go about that.
+        // ToDo - Rotate towards target but clamp/lock rotation past certain point.
         if (currentTarget)
         {
 
@@ -541,8 +550,12 @@ public class EnemyStateMachine : MonoBehaviour
             float singleStep = observerTurnSpeed * Time.deltaTime;
             Vector3 newDirection = Vector3.RotateTowards(transform.forward, targetDirection, singleStep, 0.0f);
             transform.rotation = Quaternion.LookRotation(newDirection);
-        
+
             // Report last seen position to connected enemies
+            foreach (EnemyStateMachine enemy in connectedEnemies)
+            {
+                enemy.SetCurrentTarget(sightedTarget);
+            }
         
         }
         else
@@ -554,7 +567,6 @@ public class EnemyStateMachine : MonoBehaviour
         // Need to ensure when leaving sight current target is cleared.
         CheckVision(fieldOfView);
 
-        // set currentTarget to all enemies. (Connect enemies in inspector?
     }
 
     /// <summary>
@@ -582,7 +594,7 @@ public class EnemyStateMachine : MonoBehaviour
         transform.position = Vector3.MoveTowards(transform.position, movementLocation, movementSpeed * Time.deltaTime);
     }
     
-    private void SetCurrentTarget(Transform target)
+    public void SetCurrentTarget(Transform target)
     {
         currentTarget = target;
     }
