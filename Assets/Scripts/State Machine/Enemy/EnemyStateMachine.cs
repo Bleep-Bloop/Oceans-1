@@ -190,7 +190,6 @@ public class EnemyStateMachine : MonoBehaviour
 
         // Check for target
         CheckVision(fieldOfView);
-
         if(currentTarget)
         {
             ChangeState(EnemyState.Attacking);
@@ -287,12 +286,19 @@ public class EnemyStateMachine : MonoBehaviour
         changeStateCoroutine = ChangeStateAfterTime(defaultState, attackCooldownTime);
         StartCoroutine(changeStateCoroutine);
 
+        CheckVision(fieldOfView);
 
     }
 
     // Searching
     private void SearchingState()
     {
+
+        CheckVision(fieldOfView);
+        if (currentTarget)
+        {
+            ChangeState(EnemyState.Attacking);
+        }
 
         changeStateCoroutine = ChangeStateAfterTime(defaultState, searchingStateTime);
         StartCoroutine(changeStateCoroutine);
@@ -381,12 +387,18 @@ public class EnemyStateMachine : MonoBehaviour
             }
 
         }
-
+        
         // Move towards currentWaypoint
-        transform.position = Vector3.MoveTowards(transform.position, currentWaypoint.position, movementSpeed * Time.deltaTime);
-
+       // transform.position = Vector3.MoveTowards(transform.position, currentWaypoint.position, movementSpeed * Time.deltaTime);
+        Move(currentWaypoint.position);
         FaceTargetDirection(currentWaypoint.position);
-        KnockBackCollision(); 
+        KnockBackCollision();
+
+        CheckVision(fieldOfView);
+        if (currentTarget)
+        {
+            ChangeState(EnemyState.Attacking);
+        }
     }
 
     private void ReversePatrolDirection()
