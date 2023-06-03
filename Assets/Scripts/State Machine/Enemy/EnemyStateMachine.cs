@@ -40,7 +40,6 @@ public class EnemyStateMachine : MonoBehaviour
     [Header("Movement")]
     [SerializeField] private float movementSpeed = 1;
     [SerializeField] private float rotationDampFactor = 8.0f;
-    Transform currentTarget; // The point the object is moving to.
     Transform currentWaypoint; // Current waypoint used in Observing and Patrolling states.
     private int _currentWaypointIndex = 0;
 
@@ -57,11 +56,12 @@ public class EnemyStateMachine : MonoBehaviour
     [SerializeField] private bool canDie;
 
     // ToDo: Editor script to hide certain properties depending on enemy type
-    [Header("Observer Properties")]
+    [Header("Observer")]
     [SerializeField] private float observerPanningSpeed = 0.5f;
+    private bool isBeingAlerted; // enemy is being alerted by an AlertingState.
 
     // Runtime
-    private Vector3 currentMovementTarget;
+    private Vector3 currentMovementTarget; // The point the object is moving to.
     private bool hasCollided = false;
     private RaycastHit meleeHit;
     private bool inAttackCooldown = false;
@@ -73,6 +73,7 @@ public class EnemyStateMachine : MonoBehaviour
     [SerializeField] private bool DEBUG_MODE;
     [Tooltip("Collision-less prefab used to visualize points")]
     [SerializeField] private GameObject pointMarker;
+    [SerializeField] private Transform currentTarget; // Spotted enemy
 
     private IEnumerator changeStateCoroutine;
 
@@ -158,8 +159,10 @@ public class EnemyStateMachine : MonoBehaviour
         if (currentTarget)
             ChangeState(EnemyState.Attacking);
 
-        // Ensure currentTarget is cleared when target leaves sight.
-        CheckVision(fieldOfView);
+        if(!isBeingAlerted)
+            // Ensure currentTarget is cleared when target leaves sight.
+            CheckVision(fieldOfView);
+
     }
 
 
@@ -171,25 +174,24 @@ public class EnemyStateMachine : MonoBehaviour
     private void WanderingState()
     {
 
+        // Search for target
+        if(!isBeingAlerted)
+            CheckVision(fieldOfView);
+
+        if (currentTarget)
+            ChangeState(EnemyState.Attacking);
+
+
         Vector2 currentXZ = GetVector3XZ(transform.position);
         Vector2 currentTargetXZ = GetVector3XZ(currentMovementTarget);
 
-        // If lost sight of target and arrived at last seen position
-        if (!currentTarget && Vector2.Distance(currentXZ, currentTargetXZ) < 0.1)
-            ChangeState(EnemyState.Searching);
-
-        // Find new wander point when necessary
-        if (Vector2.Distance(currentXZ, currentTargetXZ) < 0.001 || currentMovementTarget == Vector3.zero)
+        // Find new random point on arrival
+        if (Vector2.Distance(currentXZ, currentTargetXZ) < 0.1 && !currentTarget)
             currentMovementTarget = GetRandomPointInsideCollider(wanderZone);
 
-        // Move player towards wander point
         Move(currentMovementTarget);
         FaceMoveDirection();
 
-        // Search for target
-        CheckVision(fieldOfView);
-        if (currentTarget)
-            ChangeState(EnemyState.Attacking);
     }
 
 
@@ -254,14 +256,17 @@ public class EnemyStateMachine : MonoBehaviour
             inAttackCooldown = true;
         }
 
+
         Move(currentMovementTarget);
-        FaceTargetDirection(currentTarget.position);
+        if(currentTarget)
+            FaceTargetDirection(currentTarget.position);
 
         changeStateCoroutine = ChangeStateAfterTime(defaultState, attackCooldownTime);
         StartCoroutine(changeStateCoroutine);
 
         // Ensure currentTarget is cleared when target leaves sight.
-        CheckVision(fieldOfView);
+        if(!isBeingAlerted)
+            CheckVision(fieldOfView);
     }
 
 
@@ -273,8 +278,10 @@ public class EnemyStateMachine : MonoBehaviour
     /// </summary>
     private void SearchingState()
     {
+        if(!isBeingAlerted)
         // Search for target.
         CheckVision(fieldOfView);
+        
         if (currentTarget)
             ChangeState(EnemyState.Attacking);
 
@@ -320,12 +327,19 @@ public class EnemyStateMachine : MonoBehaviour
     private void PatrollingState()
     {
 
+        // Search for target.
+        if(!isBeingAlerted)
+            CheckVision(fieldOfView);
+        
+        if (currentTarget)
+            ChangeState(EnemyState.Attacking);
+            
         currentWaypoint = wayPoints[_currentWaypointIndex];
 
         Vector2 currentXZ = GetVector3XZ(transform.position);
         Vector2 currentTargetXZ = GetVector3XZ(currentWaypoint.position);
 
-        if (Vector2.Distance(currentXZ, currentTargetXZ) < 0.01f)
+        if (Vector2.Distance(currentXZ, currentTargetXZ) < 0.01f && !currentTarget)
         {
 
             if (isPatrollingForwards)
@@ -347,10 +361,7 @@ public class EnemyStateMachine : MonoBehaviour
         // Check if player has collided and needs to be knocked back
         KnockBackCollision();
 
-        // Search for target.
-        CheckVision(fieldOfView);
-        if (currentTarget)
-            ChangeState(EnemyState.Attacking);
+
     }
 
     private void ReversePatrolDirection()
@@ -419,12 +430,14 @@ public class EnemyStateMachine : MonoBehaviour
             // Report last seen position to connected enemies
             foreach (EnemyStateMachine enemy in connectedEnemies)
             {
+                enemy.isBeingAlerted = true;
                 enemy.SetCurrentTarget(sightedTarget);
             }
 
         }
         else
         {
+            
             changeStateCoroutine = ChangeStateAfterTime(defaultState, spottedCooldownTime);
             StartCoroutine(changeStateCoroutine);
         }
@@ -529,7 +542,6 @@ public class EnemyStateMachine : MonoBehaviour
                 // Knockback ToDo: Implement better.
                 if (collisionHit.collider.gameObject.GetComponent<PlayerStateMachine>())
                 {
-                    Debug.Log("Knock Back");
                     PlayerStateMachine collidedPlayerStateMachine = collisionHit.collider.gameObject.GetComponent<PlayerStateMachine>();
 
                     Vector3 knockbackVelocity = -collidedPlayerStateMachine.velocity;
@@ -618,6 +630,10 @@ public class EnemyStateMachine : MonoBehaviour
         Vector3 newLocalPosition = transform.localPosition;
         newLocalPosition.y = .8f;
         transform.localPosition = newLocalPosition;
+
+        // Remove from list to prevent null reference.
+        if(connectedEnemies.Contains(this))
+            connectedEnemies.Remove(this);        
 
         Destroy(gameObject, 2.0f);
     }

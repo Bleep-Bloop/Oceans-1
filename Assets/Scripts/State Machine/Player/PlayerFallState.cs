@@ -23,10 +23,10 @@ public class PlayerFallState : PlayerBaseState
         if (Physics.SphereCast(stateMachine.transform.position, 0.5f, -stateMachine.transform.up, out hit, 0.5f, stateMachine.enemyLayerMask))
         {
             EnemyStateMachine hitEnemy = hit.collider.gameObject.GetComponent<EnemyStateMachine>();
-            if (hitEnemy.GetCanDie())
-            {
+            
+            if (hitEnemy && hitEnemy.GetCanDie())
                 hitEnemy.Death();
-            }
+
         }
 
 
