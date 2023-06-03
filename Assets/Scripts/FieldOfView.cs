@@ -7,7 +7,7 @@ public class FieldOfView : MonoBehaviour
 
     // Distance the field of view will find targets.
     public float viewRadius;
-    
+
     // Angle of the field of view's 'vision'.
     [Range(0, 360)]
     public float viewAngle;
@@ -36,7 +36,7 @@ public class FieldOfView : MonoBehaviour
     void FindVisibleTargets()
     {
 
-        visibleTargets.Clear(); 
+        visibleTargets.Clear();
 
         Collider[] targetsInViewRadius = Physics.OverlapSphere(transform.position, viewRadius, targetMask);
 
@@ -46,12 +46,12 @@ public class FieldOfView : MonoBehaviour
 
             // Check if target is inside view angle
             Vector3 directionToTarget = (target.position - transform.position).normalized;
-            if(Vector3.Angle(transform.forward, directionToTarget) < viewAngle/2)
+            if (Vector3.Angle(transform.forward, directionToTarget) < viewAngle / 2)
             {
                 float distanceToTarget = Vector3.Distance(transform.position, target.position);
 
                 // Raycast to target to see if an obstacle is blocking view
-                if(!Physics.Raycast(transform.position, directionToTarget, distanceToTarget, obstacleMask))
+                if (!Physics.Raycast(transform.position, directionToTarget, distanceToTarget, obstacleMask))
                     visibleTargets.Add(target);
 
             }
@@ -63,7 +63,7 @@ public class FieldOfView : MonoBehaviour
     public Vector3 DirFromAngle(float angleInDegrees, bool angleIsGlobal)
     {
         // Convert to global
-        if(!angleIsGlobal)
+        if (!angleIsGlobal)
             angleInDegrees += transform.eulerAngles.y;
 
         return new Vector3(Mathf.Sin(angleInDegrees * Mathf.Deg2Rad), 0, Mathf.Cos(angleInDegrees * Mathf.Deg2Rad));

@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public abstract class PlayerBaseState : State
@@ -17,7 +15,7 @@ public abstract class PlayerBaseState : State
         Vector3 cameraForward = new(stateMachine.mainCamera.forward.x, 0, stateMachine.mainCamera.forward.z);
         Vector3 cameraRight = new(stateMachine.mainCamera.right.x, 0, stateMachine.mainCamera.right.z);
 
-        Vector3 moveDirection = cameraForward.normalized * stateMachine.inputReader.moveComposite.y + 
+        Vector3 moveDirection = cameraForward.normalized * stateMachine.inputReader.moveComposite.y +
             cameraRight.normalized * stateMachine.inputReader.moveComposite.x;
 
         stateMachine.velocity.x = moveDirection.x * stateMachine.movementSpeed;
@@ -37,7 +35,7 @@ public abstract class PlayerBaseState : State
 
     protected void ApplyGravity()
     {
-        if(stateMachine.velocity.y > Physics.gravity.y)
+        if (stateMachine.velocity.y > Physics.gravity.y)
         {
             stateMachine.velocity.y += Physics.gravity.y * Time.deltaTime;
         }

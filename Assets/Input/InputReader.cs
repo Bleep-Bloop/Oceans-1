@@ -1,8 +1,6 @@
-using System.Collections;
-using System.Collections.Generic;
 using System;
-using UnityEngine.InputSystem;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class InputReader : MonoBehaviour, Controls.IPlayerActions
 {
@@ -16,7 +14,7 @@ public class InputReader : MonoBehaviour, Controls.IPlayerActions
 
     private void OnEnable()
     {
-        if(controls != null)
+        if (controls != null)
             return;
 
         controls = new Controls();

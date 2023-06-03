@@ -50,7 +50,7 @@ public class EnemyStateMachine : MonoBehaviour
     [SerializeField] private float spottedCooldownTime = 5.0f;   // Time spent in AlertingState after losing vision.
     [SerializeField] private float timeBetweenCollisions = 0.5f;
 
-    [Header("Combat")] 
+    [Header("Combat")]
     [SerializeField] private float meleeReach = 1f;
     [SerializeField] private float meleeRadius = 0.5f;
     [SerializeField] private float knockbackForce = 1.2f;
@@ -62,11 +62,11 @@ public class EnemyStateMachine : MonoBehaviour
 
     // Runtime
     private Vector3 currentMovementTarget;
-    private bool hasCollided = false; 
+    private bool hasCollided = false;
     private RaycastHit meleeHit;
     private bool inAttackCooldown = false;
     private bool isPatrollingForwards = true;
-    
+
     private bool coroutineRunning = false;
 
     [Header("Debugging")]
@@ -163,7 +163,7 @@ public class EnemyStateMachine : MonoBehaviour
     }
 
 
-// Wandering State //
+    // Wandering State //
     /// <summary>
     /// Enemy moves towards a random point inside wanderZone.
     /// On arrival a new point is chosen.
@@ -193,7 +193,7 @@ public class EnemyStateMachine : MonoBehaviour
     }
 
 
-// Attacking State//
+    // Attacking State//
     /// <summary>
     /// Enemy chases towards currentTarget's last seen position.
     /// When within meleeReach a spherecast checks for hit.
@@ -239,7 +239,7 @@ public class EnemyStateMachine : MonoBehaviour
     }
 
 
-// Attacking Cooldown State //
+    // Attacking Cooldown State //
     /// <summary>
     /// Enemy picks a random location around target and moves there.
     /// Changes state to defaultState after attackCooldownTime has elapsed.
@@ -265,7 +265,7 @@ public class EnemyStateMachine : MonoBehaviour
     }
 
 
-// Searching State //
+    // Searching State //
     /// <summary>
     /// Enemy randomly rotates searching area around themselves.
     /// Returns to defaultState after searchingStateTime has elapsed.
@@ -312,7 +312,7 @@ public class EnemyStateMachine : MonoBehaviour
     }
 
 
-// Patrolling State //
+    // Patrolling State //
     /// <summary>
     /// Enemy moves sequentially to position of objects in wayPoints list.
     /// On collision with anything the direction of movement through list reverses.
@@ -398,7 +398,7 @@ public class EnemyStateMachine : MonoBehaviour
             ChangeState(EnemyState.Alerting);
     }
 
-// Alerting State //
+    // Alerting State //
     /// <summary>
     /// Enemy passes spottedTarget's transform to all EnemyStateMachines inside connectedEnemies List.
     /// </summary>
@@ -475,7 +475,7 @@ public class EnemyStateMachine : MonoBehaviour
         return boxCollider.transform.TransformPoint(point);
     }
 
-    
+
     /// <summary>
     /// Finds random point inside circle around given transform
     /// </summary>
@@ -515,7 +515,7 @@ public class EnemyStateMachine : MonoBehaviour
     {
         RaycastHit collisionHit;
 
-        if(hasCollided == false)
+        if (hasCollided == false)
         {
             // p1 & p2 sphere on bottom and sphere on top
             if (Physics.BoxCast(transform.position, boxCollider.size / 2, Vector3.forward, out collisionHit, transform.rotation, 0.5f) ||
@@ -524,7 +524,7 @@ public class EnemyStateMachine : MonoBehaviour
                 Physics.BoxCast(transform.position, boxCollider.size / 2, -Vector3.right, out collisionHit, transform.rotation, 0.5f) ||
                 Physics.BoxCast(transform.position, boxCollider.size / 2, Vector3.up, out collisionHit, transform.rotation, 0.5f))
             {
-                
+
                 ReversePatrolDirection();
                 // Knockback ToDo: Implement better.
                 if (collisionHit.collider.gameObject.GetComponent<PlayerStateMachine>())
@@ -534,7 +534,7 @@ public class EnemyStateMachine : MonoBehaviour
 
                     Vector3 knockbackVelocity = -collidedPlayerStateMachine.velocity;
                     knockbackVelocity.y += 15; // knockback kickup variable
-                    knockbackVelocity.x = -25; 
+                    knockbackVelocity.x = -25;
                     knockbackVelocity.z = -25;
 
                     collidedPlayerStateMachine.velocity = (knockbackVelocity * knockbackForce);
@@ -544,7 +544,7 @@ public class EnemyStateMachine : MonoBehaviour
                     hasCollided = true;
 
                 }
-                
+
                 // To prevent one object from triggering multiple times // ToDo: Save previous collision object and then reset in ResetCollisionCheck.
                 Invoke("ResetCollisionCheck", timeBetweenCollisions);
             }
@@ -568,7 +568,7 @@ public class EnemyStateMachine : MonoBehaviour
         if (vision.visibleTargets.Count > 0)
             SetCurrentTarget(vision.visibleTargets[0]);
         else
-            SetCurrentTarget(null); 
+            SetCurrentTarget(null);
     }
 
 
@@ -609,11 +609,11 @@ public class EnemyStateMachine : MonoBehaviour
         return canDie;
     }
 
-    
+
     public void Death()
     {
         ChangeState(EnemyState.Dying);
-        
+
         transform.localScale = new Vector3(1, .5f, 1f);
         Vector3 newLocalPosition = transform.localPosition;
         newLocalPosition.y = .8f;

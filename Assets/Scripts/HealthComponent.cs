@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class HealthComponent : MonoBehaviour
@@ -17,19 +15,19 @@ public class HealthComponent : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 
     public void TakeDamage(int damageTaken)
     {
         currentHealth -= damageTaken;
-        
-        if(currentHealth <= 0)
+
+        if (currentHealth <= 0)
         {
             // If the player dies, end application.
-            if(GetComponent<PlayerStateMachine>())
+            if (GetComponent<PlayerStateMachine>())
                 UnityEditor.EditorApplication.isPlaying = false;
-              
+
         }
     }
 }
