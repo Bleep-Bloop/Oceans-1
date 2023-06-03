@@ -40,7 +40,6 @@ public class EnemyStateMachine : MonoBehaviour
     [Header("Movement")]
     [SerializeField] private float movementSpeed = 1;
     [SerializeField] private float rotationDampFactor = 8.0f;
-    Transform currentTarget; // The point the object is moving to.
     Transform currentWaypoint; // Current waypoint used in Observing and Patrolling states.
     private int _currentWaypointIndex = 0;
 
@@ -61,7 +60,7 @@ public class EnemyStateMachine : MonoBehaviour
     [SerializeField] private float observerPanningSpeed = 0.5f;
 
     // Runtime
-    private Vector3 currentMovementTarget;
+    private Vector3 currentMovementTarget; // The point the object is moving to.
     private bool hasCollided = false;
     private RaycastHit meleeHit;
     private bool inAttackCooldown = false;
@@ -73,6 +72,7 @@ public class EnemyStateMachine : MonoBehaviour
     [SerializeField] private bool DEBUG_MODE;
     [Tooltip("Collision-less prefab used to visualize points")]
     [SerializeField] private GameObject pointMarker;
+    [SerializeField] private Transform currentTarget; // Spotted enemy
 
     private IEnumerator changeStateCoroutine;
 
@@ -171,25 +171,21 @@ public class EnemyStateMachine : MonoBehaviour
     private void WanderingState()
     {
 
-        Vector2 currentXZ = GetVector3XZ(transform.position);
-        Vector2 currentTargetXZ = GetVector3XZ(currentMovementTarget);
-
-        // If lost sight of target and arrived at last seen position
-        if (!currentTarget && Vector2.Distance(currentXZ, currentTargetXZ) < 0.1)
-            ChangeState(EnemyState.Searching);
-
-        // Find new wander point when necessary
-        if (Vector2.Distance(currentXZ, currentTargetXZ) < 0.001 || currentMovementTarget == Vector3.zero)
-            currentMovementTarget = GetRandomPointInsideCollider(wanderZone);
-
-        // Move player towards wander point
-        Move(currentMovementTarget);
-        FaceMoveDirection();
-
         // Search for target
         CheckVision(fieldOfView);
         if (currentTarget)
             ChangeState(EnemyState.Attacking);
+
+        Vector2 currentXZ = GetVector3XZ(transform.position);
+        Vector2 currentTargetXZ = GetVector3XZ(currentMovementTarget);
+
+        // Find new random point on arrival
+        if (Vector2.Distance(currentXZ, currentTargetXZ) < 0.1)
+            currentMovementTarget = GetRandomPointInsideCollider(wanderZone);
+
+        Move(currentMovementTarget);
+        FaceMoveDirection();
+
     }
 
 
@@ -420,6 +416,7 @@ public class EnemyStateMachine : MonoBehaviour
             foreach (EnemyStateMachine enemy in connectedEnemies)
             {
                 enemy.SetCurrentTarget(sightedTarget);
+                Debug.Log("Alerted enemy " + enemy.gameObject.name);
             }
 
         }
