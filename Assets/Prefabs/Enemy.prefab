@@ -428,10 +428,11 @@ MonoBehaviour:
   meleeReach: 1
   meleeRadius: 0.5
   knockbackForce: 10
-  canDie: 0
+  canDie: 1
   observerPanningSpeed: 0.5
   DEBUG_MODE: 0
   pointMarker: {fileID: 4926983259924304289, guid: 6b61f0e1e3663284090bbad2a0c665a6, type: 3}
+  currentTarget: {fileID: 0}
 --- !u!114 &3156328399659117208
 MonoBehaviour:
   m_ObjectHideFlags: 0
