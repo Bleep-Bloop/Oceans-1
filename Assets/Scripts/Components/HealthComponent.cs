@@ -26,7 +26,8 @@ public class HealthComponent : MonoBehaviour
         {
             // If the player dies, end application.
             if (GetComponent<PlayerStateMachine>())
-                UnityEditor.EditorApplication.isPlaying = false;
+                Application.Quit();
+                    // UnityEditor.EditorApplication.isPlaying = false;
 
         }
     }
